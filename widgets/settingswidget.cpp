@@ -21,6 +21,15 @@
 #include "settingswidget.h"
 #include "ui_settingswidget.h"
 
+
+extern QString sdk;
+extern QString adb;
+extern QString aapt;
+extern QProcess *adbProces;
+extern QString busybox;
+extern QString fastboot;
+
+
 SettingsWidget::SettingsWidget(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::SettingsWidget)
@@ -434,7 +443,6 @@ void SettingsWidget::getSettings()
 //    this->phonePath = settings->value("phonePath", "/").toString();
 //    this->computerPath = settings->value("computerPath", "/").toString();
 
-    this->sdkPath = settings->value("sdkPath").toString();
     this->sdFolder = settings->value("sdFolder","empty").toString();
     if (this->sdFolder == "empty")
     {
@@ -801,7 +809,7 @@ void SettingsWidget::detectSdExtFolder()
         QString output;
         this->sdFolder = "";
 
-        shell->start("\"" + this->sdkPath + "\"adb shell 'busybox stat /data/app |grep \"File\"'");
+        shell->start("\"" + adb + "\" shell " + busybox + " stat /data/app |grep \"File\""); //'- remove. Does it work? TEST!!!
         shell->waitForFinished();
         output = shell->readAll();
         if (output.contains("->"))
@@ -812,7 +820,7 @@ void SettingsWidget::detectSdExtFolder()
         }
         else
         {
-            shell->start("\"" + this->sdkPath + "\"adb shell busybox mount");
+            shell->start("\"" + adb + "\" shell " + busybox + " mount");
             shell->waitForFinished();
             output = shell->readAll();
             if (output.contains("ext"))
@@ -843,39 +851,21 @@ void SettingsWidget::detectSdExtFolder()
 
 void SettingsWidget::on_pushButtonChangeSDKPath_pressed()
 {
-    QString sdk;
-    QString tmp;
-    bool sdkOk = false;
+    QSettings settings;
+        adb = QFileDialog::getOpenFileName(0,"adb executable", "", "adb.*");
+        aapt = QFileDialog::getOpenFileName(0,"aapt executable",QFileInfo(adb).canonicalPath(), "aapt.*");
+        fastboot = QFileDialog::getOpenFileName(0,"fastboot executable", QFileInfo(adb).canonicalPath(), "fastboot.*");
+    if ((QFile::exists(adb))&&(QFile::exists(aapt))&&(QFile::exists(fastboot))){
 
-    sdk=QFileDialog::getExistingDirectory(NULL,QObject::tr("Choose path to dir with adb and aapt binaries"),"/");
-
-
-    if (sdk.isEmpty())
-	return;
-
-    sdk.append("/");
-
-    QDir checkSDK(sdk);
-    QFileInfoList list=checkSDK.entryInfoList();
-    while(list.length()>0)
-    {
-	tmp = list.takeFirst().fileName();
-	if (tmp.contains("adb"))
-	{
-	    sdkOk=true;
-	    break;
-	}
-    }
-
-    if (!sdkOk)
-    {
-	QMessageBox *msgBox = new QMessageBox(QMessageBox::Critical, QObject::tr("error"), QObject::tr("there is no adb binary in here!"));
-	msgBox->exec();
-    }
-    else
-    {
-	QSettings settings;
-	settings.setValue("sdkPath",sdk);
-	this->sdkPath = sdk;
+        settings.setValue("sdkPath", sdk);
+        settings.setValue("adbExecutable", adb);
+        settings.setValue("aaptExecutable", aapt);
+        settings.setValue("fastbootExecutable", fastboot);
+    } else {
+        sdk = settings.value("sdkPath").toString();
+        adb = settings.value("adbExecutable").toString();
+        aapt = settings.value("aaptExecutable").toString();
+        fastboot = settings.value("fastbootExecutable").toString();
+        QMessageBox::critical(0,"Error", "Some of the executables cannot be found. \nUsing previous settings");
     }
 }

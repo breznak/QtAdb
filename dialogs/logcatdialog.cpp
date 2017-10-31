@@ -21,6 +21,13 @@
 #include "logcatdialog.h"
 #include "ui_logcatdialog.h"
 
+extern QString sdk;
+extern QString adb;
+extern QString aapt;
+extern QProcess *adbProces;
+extern QString busybox;
+extern QString fastboot;
+
 LogcatDialog::LogcatDialog(QWidget *parent) :
     QDialog(parent)
 {
@@ -29,7 +36,6 @@ LogcatDialog::LogcatDialog(QWidget *parent) :
     QSettings settings;
     this->bufferLimit = settings.value("logcatBufferLimit",0).toInt();
     this->spinBoxBufferLimit->setValue(this->bufferLimit);
-    this->sdk = settings.value("sdkPath").toString();
 
     checkBoxAutoScroll->setChecked(settings.value("logcatAutoScroll",true).toBool());
     this->tableView->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -58,7 +64,7 @@ LogcatDialog::LogcatDialog(QWidget *parent) :
     this->proces=new QProcess(this);
     proces->setProcessChannelMode(QProcess::MergedChannels);
     this->setWindowTitle("Logcat");
-    this->proces->start("\""+sdk+"\""+"adb logcat");
+    this->proces->start("\""+adb + "\" logcat");
 
     this->tableView->setModel(this->filterModel);
     this->textBrowser->hide();
@@ -207,7 +213,7 @@ void LogcatDialog::startLogcat()
 {
     if (this->proces->isOpen())
         this->proces->close();
-    this->proces->start("\""+sdk+"\""+"adb logcat");
+    this->proces->start("\""+adb + "\" logcat");
 }
 
 void LogcatDialog::on_pushButtonClearLogcat_pressed()
@@ -268,6 +274,30 @@ void LogcatDialog::exportSelectedToFile()
     {
         index = this->filterModel->mapToSource(indexList.takeFirst());
         list.append(this->logcatModel->getRow(index.row()));
+    }
+    QString output;
+    foreach (LogcatMessage item, list)
+    {
+        output.append(item.timestamp+" "+item.type+" "+item.sender+" "+item.pid+" "+item.message+"\n");
+    }
+
+    QFile file;
+    file.setFileName(QFileDialog::getSaveFileName(this, tr("Save File..."), "./logcat.txt", tr("txt file")+" (*.txt)"));
+    if (file.fileName().isEmpty())
+        return;
+    if (file.open(QFile::WriteOnly))
+    {
+        file.write(output.toLatin1());
+        file.close();
+    }
+}
+
+void LogcatDialog::on_saveButton_clicked()
+{
+    QList<LogcatMessage> list;
+    for (int i = 0 ; i<this->logcatModel->rowCount(); i++ )
+    {
+        list.append(this->logcatModel->getRow(i));
     }
     QString output;
     foreach (LogcatMessage item, list)

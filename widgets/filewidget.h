@@ -26,6 +26,7 @@
 #include "../dialogs/appinfo.h"
 #include "../dialogs/dialogkopiuj.h"
 #include "../dialogs/appdialog.h"
+#include "../dialogs/permissions.h"
 #include "../classes/models/filetablemodel.h"
 #include "../classes/mytableview.h"
 #include "settingswidget.h"
@@ -42,7 +43,6 @@ public:
     void run();
     QString path;
     QString fileName;
-    QString sdk;
 
 signals:
     void foundFile(File);
@@ -95,7 +95,6 @@ private:
     QString renameOldName;
     bool rightChangeName;
     bool rightNewDir;
-    QString sdk;
 
     Phone *phoneLeft;
     QTabBar *rightTabBar;
@@ -188,6 +187,7 @@ private slots:
     void copySlotToComputer(QStringList list);
     void copySlotToPhone(QStringList list);
     void copySlotToPhoneLeft(QStringList list);
+    void permissions();
 signals:
     void phoneConnectionChanged(int);
     void progressValue(int value, int max);
